@@ -1,0 +1,326 @@
+/* ========================= */
+/* RESET */
+/* ========================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,
+body,
+#root{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    background:#111215;
+    font-family:Inter,sans-serif;
+}
+
+/* ========================= */
+/* PAGE */
+/* ========================= */
+
+.loading-page{
+
+    position:fixed;
+    inset:0;
+
+    background:#111215;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+/* ========================= */
+/* GANTRY */
+/* ========================= */
+
+.gantry{
+
+    width:560px;
+
+    height:120px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    border-radius:20px;
+
+    background:
+    linear-gradient(
+    180deg,
+    #25282D,
+    #1A1C20
+    );
+
+    border:2px solid #343840;
+
+    box-shadow:
+    inset 0 2px 4px rgba(255,255,255,.04),
+    inset 0 -8px 14px rgba(0,0,0,.65),
+    0 18px 40px rgba(0,0,0,.45);
+
+}
+
+/* ========================= */
+/* LIGHTS */
+/* ========================= */
+
+.start-lights{
+
+    display:flex;
+
+    gap:50px;
+
+}
+
+.light{
+
+    position:relative;
+
+    width:60px;
+
+    height:60px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(circle at 35% 30%,
+    #484C54 0%,
+    #2E3238 30%,
+    #1A1C20 75%,
+    #0E1013 100%);
+
+    border:3px solid #434850;
+
+    box-shadow:
+
+    inset 0 5px 7px rgba(255,255,255,.08),
+
+    inset 0 -10px 14px rgba(0,0,0,.7),
+
+    0 0 0 4px #16181C;
+
+    transition:.35s;
+
+}
+
+.light::before{
+
+    content:"";
+
+    position:absolute;
+
+    width:18px;
+
+    height:10px;
+
+    top:8px;
+
+    left:11px;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.18);
+
+    filter:blur(2px);
+
+}
+
+/* ========================= */
+/* ACTIVE LIGHT */
+/* ========================= */
+
+.light.active{
+
+    background:
+    radial-gradient(circle,
+    #FFD6D6 0%,
+    #FF7070 15%,
+    #FF2B2B 35%,
+    #E10600 60%,
+    #690000 100%);
+
+    border:3px solid #FF7B7B;
+
+    box-shadow:
+        0 0 12px rgba(225,6,0,.9),
+        0 0 25px rgba(225,6,0,.65),
+        0 0 45px rgba(225,6,0,.35),
+        inset 0 3px 6px rgba(255,255,255,.35);
+
+    animation:lightOn .22s ease-out forwards;
+
+}
+
+/* ========================= */
+/* STATUS */
+/* ========================= */
+
+.loading-status{
+
+    margin-top:22px;
+
+    color:#81858D;
+
+    font-size:13px;
+
+    font-weight:500;
+
+    letter-spacing:.6px;
+
+    transition:.3s;
+
+}
+
+.fade-text{
+
+    animation:textFade .45s ease;
+
+}
+
+@keyframes textFade{
+
+    0%{
+
+        opacity:0;
+
+        transform:translateY(6px);
+
+    }
+
+    100%{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+/* ========================= */
+/* TEXT ANIMATION */
+/* ========================= */
+
+.fade-in{
+
+    animation:fadeInText .25s ease forwards;
+
+}
+
+.fade-out{
+
+    animation:fadeOutText .25s ease forwards;
+
+}
+
+@keyframes fadeInText{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(8px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+@keyframes fadeOutText{
+
+    from{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+    to{
+
+        opacity:0;
+
+        transform:translateY(-8px);
+
+    }
+
+}
+/* ========================= */
+/* LIGHT POWER ON */
+/* ========================= */
+
+@keyframes lightOn{
+
+    0%{
+
+        transform:scale(.88);
+
+        filter:brightness(.7);
+
+    }
+
+    55%{
+
+        transform:scale(1.08);
+
+        filter:brightness(1.25);
+
+    }
+
+    100%{
+
+        transform:scale(1);
+
+        filter:brightness(1);
+
+    }
+
+}
+
+/* ========================= */
+/* PAGE FADE */
+/* ========================= */
+
+.page-fade{
+
+    animation:fadeAway .45s ease forwards;
+
+}
+
+@keyframes fadeAway{
+
+    from{
+
+        opacity:1;
+
+    }
+
+    to{
+
+        opacity:0;
+
+    }
+
+}
