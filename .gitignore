@@ -20,6 +20,7 @@ frontend/.vite/
 /yarn-error.log*
 
 # Environment files
+.env
 .env.local
 .env.*.local
 .idea/
