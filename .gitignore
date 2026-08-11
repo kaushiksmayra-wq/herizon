@@ -14,9 +14,15 @@ backend/db.sqlite3
 node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
 /npm-debug.log*
 /yarn-debug.log*
 /yarn-error.log*
+
+# Environment files
+.env.local
+.env.*.local
+.idea/
 
 # OS generated files
 .DS_Store
@@ -24,3 +30,6 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Backend media uploads
+backend/media/

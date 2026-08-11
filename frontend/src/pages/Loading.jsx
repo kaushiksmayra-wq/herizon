@@ -1,506 +1,676 @@
-import "./Loading.css";
-
-import { useNavigate, useLocation } from "react-router-dom";
+﻿import "./Loading.css";
 
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import PageTransition from "../components/PageTransition";
 
 
+const loadingMessages = {
+  20: "Preparing Race Radio...",
+  40: "Generating Transcript...",
+  60: "Detecting Driver Emotion...",
+  80: "Calculating Stress Level...",
+  100: "Generating AI Recommendation...",
+};
+
+
 function Loading() {
 
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const navigate = useNavigate();
+  const sessionData = location.state || {};
 
-    const location = useLocation();
+  const {
+    session_id,
+    driver,
+    team,
+    track,
+    lap
+  } = sessionData;
 
 
-    const sessionData = location.state || {};
+  const [progress, setProgress] = useState(0);
 
+  const [message, setMessage] = useState(
+    "Preparing Analysis..."
+  );
 
+  const [fade, setFade] = useState(true);
 
-    const [progress, setProgress] = useState(0);
+  const [lightsOut, setLightsOut] = useState(false);
 
-    const [message, setMessage] = useState(
-        "Preparing Analysis..."
-    );
+  const [aiData, setAiData] = useState(null);
 
-    const [fade, setFade] = useState(true);
+  const [analysisFinished, setAnalysisFinished] =
+    useState(false);
 
-    const [lightsOut, setLightsOut] = useState(false);
+  const [visualLoadingFinished, setVisualLoadingFinished] =
+    useState(false);
 
-    const [aiData, setAiData] = useState(null);
 
+  /*
+  ============================================================
+  CHECK SESSION + START AI ANALYSIS
+  ============================================================
+  */
 
+  useEffect(() => {
 
+    if (!session_id) {
 
+      console.error(
+        "No session_id received."
+      );
 
-    const loadingMessages = {
+      navigate("/upload");
 
-        20: "Uploading Driver Radio...",
+      return;
 
-        40: "Generating Transcript...",
+    }
 
-        60: "Detecting Driver Emotion...",
 
-        80: "Calculating Stress Level...",
+    /*
+    ==========================================================
+    START REAL AI ANALYSIS IMMEDIATELY
+    ==========================================================
+    */
 
-        100: "Generating AI Recommendation..."
+    const analyzeRace = async () => {
 
-    };
+      try {
 
+        console.log(
+          "ANALYZING SESSION:",
+          session_id
+        );
 
 
+        const response = await fetch(
+          `http://127.0.0.1:8001/api/analyze/${session_id}/`,
+          {
+            method: "POST"
+          }
+        );
 
 
+        const data = await response.json();
 
-    useEffect(() => {
 
+        console.log(
+          "ANALYSIS RESPONSE:",
+          data
+        );
 
-        const uploadAudio = async () => {
 
+        if (!response.ok) {
 
-            const formData = new FormData();
+          throw new Error(
+            data.error ||
+            "Analysis failed"
+          );
 
+        }
 
 
-            formData.append(
-                "audio_file",
-                sessionData.file
-            );
+        /*
+        ======================================================
+        AI ANALYSIS FINISHED
+        ======================================================
+        */
 
+        console.log(
+          "AI ANALYSIS COMPLETE"
+        );
 
-            formData.append(
-                "driver_name",
-                sessionData.driver
-            );
 
+        setAiData(data);
 
-            formData.append(
-                "team",
-                sessionData.team
-            );
+        setAnalysisFinished(true);
 
 
-            formData.append(
-                "track",
-                sessionData.track
-            );
+      } catch (error) {
 
+        console.error(
+          "ANALYSIS ERROR:",
+          error
+        );
 
-            formData.append(
-                "lap_number",
-                sessionData.lap
-            );
 
+        /*
+        ======================================================
+        FALLBACK
+        ======================================================
+        */
 
+        const failedData = {
 
+          transcript:
+            "Unable to generate transcript.",
 
-            try {
+          mood:
+            "Unavailable",
 
+          confidence:
+            0,
 
-                const response = await fetch(
+          stress:
+            0,
 
-                    "/api/upload/",
+          stress_analysis:
+            "No stress analysis available.",
 
-                    {
+          assessment:
+            "Analysis Failed",
 
-                        method: "POST",
+          peak_stress:
+            "Unavailable",
 
-                        body: formData
+          peakStress:
+            "Unavailable",
 
-                    }
+          summary:
+            "Unable to generate AI analysis.",
 
-                );
+          recommendations: [
+            "Please check the backend analysis service."
+          ],
 
+          ai_result:
+            null,
 
+          transcription_error:
+            error.message,
 
-                const data = await response.json();
-
-
-
-                console.log(
-                    "BACKEND RESPONSE:",
-                    data
-                );
-
-
-
-                if(response.ok){
-
-
-                    setAiData(data);
-
-
-                }
-
-                else {
-
-
-                    setAiData({
-
-                        transcript:
-                        "AI processing failed.",
-
-
-                        mood:
-                        "Unavailable",
-
-
-                        confidence:
-                        0,
-
-
-                        stress:
-                        0,
-
-
-                        summary:
-                        "Backend returned an error.",
-
-
-                        recommendations:[
-
-                            "Check backend processing"
-
-                        ]
-
-                    });
-
-
-                }
-
-
-
-            }
-
-
-            catch(error){
-
-
-                console.log(
-                    "UPLOAD ERROR:",
-                    error
-                );
-
-
-
-                setAiData({
-
-                    transcript:
-                    "Backend connection failed.",
-
-
-                    mood:
-                    "Unavailable",
-
-
-                    confidence:
-                    0,
-
-
-                    stress:
-                    0,
-
-
-                    summary:
-                    "Unable to generate AI analysis.",
-
-
-                    recommendations:[
-
-                        "Restart backend server"
-
-                    ]
-
-                });
-
-
-            }
-
-
+          emotion_error:
+            error.message
 
         };
 
 
+        setAiData(
+          failedData
+        );
 
+        setAnalysisFinished(true);
 
+      }
 
-        uploadAudio();
+    };
 
 
+    analyzeRace();
 
 
+  }, [
+    session_id,
+    navigate
+  ]);
 
 
-        const steps = [
-            20,
-            40,
-            60,
-            80,
-            100
-        ];
+  /*
+  ============================================================
+  F1 LIGHTS LOADING ANIMATION
 
+  This animation is COMPLETELY INDEPENDENT
+  from the AI request.
 
+  This guarantees that the user sees
+  all 5 lights even if AI finishes quickly.
+  ============================================================
+  */
 
-        let index = 0;
+  useEffect(() => {
 
+    if (!session_id) {
 
+      return;
 
+    }
 
-        const interval = setInterval(() => {
 
+    const steps = [
+      20,
+      40,
+      60,
+      80,
+      100
+    ];
 
 
-            if(index < steps.length){
+    let index = 0;
 
 
+    /*
+    ----------------------------------------------------------
+    FIRST LIGHT
+    ----------------------------------------------------------
+    */
 
-                setFade(false);
+    setProgress(20);
 
-
-
-                setTimeout(() => {
-
-
-
-                    const value = steps[index];
-
-
-
-                    setProgress(value);
-
-
-
-                    setMessage(
-                        loadingMessages[value]
-                    );
-
-
-
-                    setFade(true);
-
-
-
-                    index++;
-
-
-
-                },250);
-
-
-
-            }
-
-
-            else {
-
-
-                clearInterval(interval);
-
-
-            }
-
-
-
-        },1700);
-
-
-
-
-
-        return () => clearInterval(interval);
-
-
-
-    }, []);
-
-
-
-
-
-
-
-
-    useEffect(() => {
-
-
-        if(!aiData) return;
-
-
-
-
-        setLightsOut(true);
-
-
-
-
-        setTimeout(() => {
-
-
-
-            navigate(
-
-                "/results",
-
-                {
-
-
-                    state:{
-
-
-                        driver:
-                        sessionData.driver,
-
-
-                        team:
-                        sessionData.team,
-
-
-                        track:
-                        sessionData.track,
-
-
-                        lap:
-                        sessionData.lap,
-
-
-                        transcript:
-                        aiData.transcript || 
-                        "No transcript generated.",
-
-
-
-                        mood:
-                        aiData.mood ||
-                        "Analyzing",
-
-
-
-                        confidence:
-                        aiData.confidence ||
-                        0,
-
-
-
-                        stress:
-                        aiData.stress ||
-                        0,
-
-
-
-                        stress_analysis:
-                        aiData.stress_analysis ||
-                        "No stress analysis available.",
-
-
-
-                        assessment:
-                        aiData.assessment ||
-                        "Pending",
-
-
-
-                        peakStress:
-                        aiData.peakStress ||
-                        "Analyzed",
-
-
-
-                        summary:
-                        aiData.summary ||
-                        "No summary generated.",
-
-
-
-                        recommendations:
-                        aiData.recommendations ||
-                        []
-
-
-
-                    }
-
-
-                }
-
-            );
-
-
-
-        },1200);
-
-
-
-    },[aiData]);
-
-
-
-
-
-
-
-
-
-    return(
-
-
-        <PageTransition>
-
-
-            <div className={`loading-page ${lightsOut ? "page-fade":""}`}>
-
-
-
-                <div className="gantry">
-
-
-                    <div className="start-lights">
-
-
-
-                        <div className={`light ${progress >=20 && !lightsOut ? "active":""}`}></div>
-
-
-                        <div className={`light ${progress >=40 && !lightsOut ? "active":""}`}></div>
-
-
-                        <div className={`light ${progress >=60 && !lightsOut ? "active":""}`}></div>
-
-
-                        <div className={`light ${progress >=80 && !lightsOut ? "active":""}`}></div>
-
-
-                        <div className={`light ${progress >=100 && !lightsOut ? "active":""}`}></div>
-
-
-
-                    </div>
-
-
-                </div>
-
-
-
-
-
-
-                <p className={`loading-status ${fade ? "fade-in":"fade-out"}`}>
-
-                    {message}
-
-                </p>
-
-
-
-            </div>
-
-
-        </PageTransition>
-
-
+    setMessage(
+      loadingMessages[20]
     );
 
+
+    /*
+    ----------------------------------------------------------
+    EACH LIGHT APPEARS EVERY 1 SECOND
+    ----------------------------------------------------------
+    */
+
+    const interval = setInterval(() => {
+
+      index += 1;
+
+
+      if (index >= steps.length) {
+
+        clearInterval(interval);
+
+        setProgress(100);
+
+        setMessage(
+          loadingMessages[100]
+        );
+
+        setVisualLoadingFinished(true);
+
+        return;
+
+      }
+
+
+      const value = steps[index];
+
+
+      /*
+      Fade old message out
+      */
+
+      setFade(false);
+
+
+      setTimeout(() => {
+
+        setProgress(value);
+
+        setMessage(
+          loadingMessages[value]
+        );
+
+        setFade(true);
+
+      }, 180);
+
+
+    }, 1000);
+
+
+    /*
+    ----------------------------------------------------------
+    CLEANUP
+    ----------------------------------------------------------
+    */
+
+    return () => {
+
+      clearInterval(interval);
+
+    };
+
+
+  }, [
+    session_id
+  ]);
+
+
+  /*
+  ============================================================
+  GO TO RESULTS
+
+  We wait for BOTH:
+
+  1. AI analysis to finish
+  2. All 5 lights to finish
+  ============================================================
+  */
+
+  useEffect(() => {
+
+    if (!analysisFinished) {
+
+      return;
+
+    }
+
+
+    if (!visualLoadingFinished) {
+
+      return;
+
+    }
+
+
+    /*
+    ==========================================================
+    LIGHTS OUT
+    ==========================================================
+    */
+
+    setLightsOut(true);
+
+
+    /*
+    ==========================================================
+    SMALL TRANSITION DELAY
+    ==========================================================
+    */
+
+    const timer = setTimeout(() => {
+
+
+      navigate(
+        "/results",
+        {
+          state: {
+
+            /*
+            ==================================================
+            SESSION INFORMATION
+            ==================================================
+            */
+
+            session_id,
+
+            driver,
+
+            team,
+
+            track,
+
+            lap,
+
+
+            /*
+            ==================================================
+            TRANSCRIPT
+            ==================================================
+            */
+
+            transcript:
+              aiData.transcript ||
+              "No transcript generated.",
+
+
+            /*
+            ==================================================
+            EMOTION
+            ==================================================
+            */
+
+            mood:
+              aiData.mood ||
+              "Analyzed",
+
+
+            /*
+            ==================================================
+            CONFIDENCE
+            ==================================================
+            */
+
+            confidence:
+              aiData.confidence ??
+              0,
+
+
+            /*
+            ==================================================
+            STRESS
+            ==================================================
+            */
+
+            stress:
+              aiData.stress ??
+              0,
+
+
+            /*
+            ==================================================
+            STRESS ANALYSIS
+            ==================================================
+            */
+
+            stress_analysis:
+              aiData.stress_analysis ||
+              "No stress analysis available.",
+
+
+            /*
+            ==================================================
+            ASSESSMENT
+            ==================================================
+            */
+
+            assessment:
+              aiData.assessment ||
+              "Analyzed",
+
+
+            /*
+            ==================================================
+            PEAK STRESS
+            ==================================================
+            */
+
+            peakStress:
+              aiData.peakStress ||
+              aiData.peak_stress ||
+              "Analyzed",
+
+
+            /*
+            ==================================================
+            SUMMARY
+            ==================================================
+            */
+
+            summary:
+              aiData.summary ||
+              "No summary generated.",
+
+
+            /*
+            ==================================================
+            RECOMMENDATIONS
+            ==================================================
+            */
+
+            recommendations:
+              aiData.recommendations ||
+              [],
+
+
+            /*
+            ==================================================
+            AI RESULT
+            ==================================================
+            */
+
+            ai_result:
+              aiData.ai_result ||
+              null,
+
+
+            /*
+            ==================================================
+            ERRORS
+            ==================================================
+            */
+
+            transcription_error:
+              aiData.transcription_error ||
+              null,
+
+            emotion_error:
+              aiData.emotion_error ||
+              null
+
+          }
+
+        }
+
+      );
+
+
+    }, 700);
+
+
+    return () => {
+
+      clearTimeout(timer);
+
+    };
+
+
+  }, [
+    analysisFinished,
+    visualLoadingFinished,
+    aiData,
+    session_id,
+    driver,
+    team,
+    track,
+    lap,
+    navigate
+  ]);
+
+
+  /*
+  ============================================================
+  UI
+  ============================================================
+  */
+
+  return (
+
+    <PageTransition>
+
+      <div
+        className={`loading-page ${
+          lightsOut
+            ? "page-fade"
+            : ""
+        }`}
+      >
+
+
+        <div className="gantry">
+
+
+          <div className="start-lights">
+
+
+            {/* =========================================
+                LIGHT 1
+            ========================================= */}
+
+            <div
+              className={`light ${
+                progress >= 20 &&
+                !lightsOut
+                  ? "active"
+                  : ""
+              }`}
+            />
+
+
+            {/* =========================================
+                LIGHT 2
+            ========================================= */}
+
+            <div
+              className={`light ${
+                progress >= 40 &&
+                !lightsOut
+                  ? "active"
+                  : ""
+              }`}
+            />
+
+
+            {/* =========================================
+                LIGHT 3
+            ========================================= */}
+
+            <div
+              className={`light ${
+                progress >= 60 &&
+                !lightsOut
+                  ? "active"
+                  : ""
+              }`}
+            />
+
+
+            {/* =========================================
+                LIGHT 4
+            ========================================= */}
+
+            <div
+              className={`light ${
+                progress >= 80 &&
+                !lightsOut
+                  ? "active"
+                  : ""
+              }`}
+            />
+
+
+            {/* =========================================
+                LIGHT 5
+            ========================================= */}
+
+            <div
+              className={`light ${
+                progress >= 100 &&
+                !lightsOut
+                  ? "active"
+                  : ""
+              }`}
+            />
+
+
+          </div>
+
+        </div>
+
+
+        {/* =============================================
+            LOADING MESSAGE
+        ============================================= */}
+
+        <p
+          className={`loading-status ${
+            fade
+              ? "fade-in"
+              : "fade-out"
+          }`}
+        >
+
+          {message}
+
+        </p>
+
+
+      </div>
+
+    </PageTransition>
+
+  );
 
 }
 

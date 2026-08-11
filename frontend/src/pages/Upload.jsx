@@ -9,12 +9,12 @@ import uploadBg from "../assets/upload-bg.png";
 
 function Upload() {
 
-
   const navigate = useNavigate();
 
 
-  const [archiveOpen, setArchiveOpen] = useState(false);
-
+  // ==========================================
+  // STATES
+  // ==========================================
 
   const [file, setFile] = useState(null);
 
@@ -26,50 +26,354 @@ function Upload() {
 
   const [lap, setLap] = useState("");
 
-
   const [error, setError] = useState("");
 
 
+  // ==========================================
+  // SUPPORTED AUDIO FORMATS
+  // ==========================================
 
-const startAnalysis = () => {
+  const allowedExtensions = [
+    "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "flac",
+    "ogg",
+    "oga",
+    "webm",
+    "wma",
+    "opus",
+    "mp4"
+  ];
 
 
-    if (!file || !driver || !team || !track || !lap) {
+  // ==========================================
+  // HANDLE AUDIO FILE
+  // ==========================================
+
+  const handleFileChange = (event) => {
+
+    const selectedFile =
+      event.target.files[0];
+
+    if (!selectedFile) {
+      return;
+    }
 
 
-        setError(
-            "Please upload an audio file and complete all session details."
-        );
+    const fileExtension =
+      selectedFile.name
+        .split(".")
+        .pop()
+        .toLowerCase();
 
 
-        return;
+    const isAudioMime =
+      selectedFile.type &&
+      selectedFile.type.startsWith("audio/");
+
+
+    const isSupportedExtension =
+      allowedExtensions.includes(fileExtension);
+
+
+    // ==========================================
+    // VALIDATE AUDIO
+    // ==========================================
+
+    if (
+      isAudioMime ||
+      isSupportedExtension
+    ) {
+
+      setFile(selectedFile);
+
+      setError("");
+
+    } else {
+
+      setFile(null);
+
+      setError(
+        "Please select a supported audio file."
+      );
+
+    }
+
+  };
+
+
+  // ==========================================
+  // START ANALYSIS
+  // ==========================================
+
+  const startAnalysis = async () => {
+
+
+    // ========================================
+    // BASIC VALIDATION
+    // ========================================
+
+    if (
+      !file ||
+      !driver ||
+      !team ||
+      !track ||
+      !lap
+    ) {
+
+      setError(
+        "Please upload an audio file and complete all session details."
+      );
+
+      return;
 
     }
 
 
+    // ========================================
+    // LAP VALIDATION
+    // ========================================
 
-    navigate("/loading", {
+    const lapNumberValue =
+      Number(lap);
 
-        state: {
 
-            file,
+    if (
+      !Number.isInteger(lapNumberValue) ||
+      lapNumberValue < 1
+    ) {
 
-            driver,
+      setError(
+        "Please enter a valid lap number."
+      );
 
-            team,
+      return;
 
-            track,
+    }
 
-            lap
 
+    setError("");
+
+
+    try {
+
+
+      // ======================================
+      // CREATE FORM DATA
+      // ======================================
+
+      const formData = new FormData();
+
+
+      formData.append(
+        "audio_file",
+        file
+      );
+
+
+      formData.append(
+        "driver_name",
+        driver
+      );
+
+
+      formData.append(
+        "team",
+        team
+      );
+
+
+      formData.append(
+        "track",
+        track
+      );
+
+
+      formData.append(
+        "lap_number",
+        lapNumberValue
+      );
+
+
+      // ======================================
+      // DEBUG LOGGING
+      // ======================================
+
+      console.log(
+        "==================================="
+      );
+
+      console.log(
+        "UPLOADING RACE AUDIO"
+      );
+
+      console.log(
+        "==================================="
+      );
+
+
+      console.log(
+        "Audio:",
+        file.name
+      );
+
+
+      console.log(
+        "Type:",
+        file.type
+      );
+
+
+      console.log(
+        "Driver:",
+        driver
+      );
+
+
+      console.log(
+        "Team:",
+        team
+      );
+
+
+      console.log(
+        "Track:",
+        track
+      );
+
+
+      console.log(
+        "Lap:",
+        lapNumberValue
+      );
+
+
+      // ======================================
+      // SEND TO DJANGO
+      // ======================================
+
+      const response = await fetch(
+        "http://127.0.0.1:8001/api/upload/",
+        {
+          method: "POST",
+          body: formData
         }
-
-    });
-
-
-};
+      );
 
 
+      const data =
+        await response.json();
+
+
+      console.log(
+        "==================================="
+      );
+
+      console.log(
+        "BACKEND UPLOAD RESPONSE"
+      );
+
+      console.log(
+        "==================================="
+      );
+
+
+      console.log(data);
+
+
+      // ======================================
+      // HANDLE ERROR
+      // ======================================
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.detail ||
+          data.message ||
+          data.error ||
+          "Audio upload failed."
+        );
+
+      }
+
+
+      // ======================================
+      // SESSION ID CHECK
+      // ======================================
+
+      if (!data.session_id) {
+
+        console.error(
+          "No session_id returned:",
+          data
+        );
+
+        throw new Error(
+          "Upload succeeded, but the backend did not return a session ID."
+        );
+
+      }
+
+
+      console.log(
+        "SESSION CREATED:",
+        data.session_id
+      );
+
+
+      // ======================================
+      // GO TO LOADING PAGE
+      // ======================================
+
+      navigate(
+        "/loading",
+        {
+          state: {
+
+            session_id:
+              data.session_id,
+
+            driver:
+              driver,
+
+            team:
+              team,
+
+            track:
+              track,
+
+            lap:
+              lapNumberValue
+
+          }
+        }
+      );
+
+
+    } catch (error) {
+
+
+      console.error(
+        "UPLOAD ERROR:",
+        error
+      );
+
+
+      setError(
+        error.message ||
+        "Unable to upload the audio file. Please make sure the Django backend is running."
+      );
+
+    }
+
+  };
+
+
+  // ==========================================
+  // UI
+  // ==========================================
 
   return (
 
@@ -80,621 +384,447 @@ const startAnalysis = () => {
         <div
           className="upload-background"
           style={{
-            backgroundImage:`url(${uploadBg})`
+            backgroundImage:
+              `url(${uploadBg})`
           }}
         >
-
 
           <Navbar />
 
 
           <main className="upload-page">
-                    {/* HEADER */}
 
 
-          <div className="upload-header">
+            {/* =====================================
+                HEADER
+            ====================================== */}
 
+            <div className="upload-header">
 
-            <p className="section-tag">
-              Race Analysis
-            </p>
+              <p className="section-tag">
+                Race Analysis
+              </p>
 
 
+              <h1>
+                UPLOAD & SESSION DETAILS
+              </h1>
 
-            <h1>
-              UPLOAD & SESSION DETAILS
-            </h1>
 
+              <p className="upload-subtitle">
 
+                Upload driver radio and provide
+                session details
 
-            <p className="upload-subtitle">
+                <br />
 
-              Upload driver radio and provide session details
+                to begin AI-powered race analysis.
 
-              <br />
+              </p>
 
-              to begin AI-powered race analysis.
+            </div>
 
-            </p>
 
+            {/* =====================================
+                MAIN GRID
+            ====================================== */}
 
-          </div>
+            <div className="upload-container">
 
 
+              {/* ===================================
+                  LEFT CARD
+              ==================================== */}
 
+              <div className="upload-card">
 
+                <h2>
+                  Upload Race Radio
+                </h2>
 
-          {/* MAIN GRID */}
 
+                <div className="upload-placeholder">
 
 
-          <div className="upload-container">
+                  <div className="upload-icon">
+                    🎧
+                  </div>
 
 
+                  <h3>
+                    Drag & Drop Audio
+                  </h3>
 
 
+                  <p>
 
-            {/* LEFT CARD */}
+                    Upload Formula 1 race radio
 
+                    <br />
 
+                    in any supported audio format
 
-            <div className="upload-card">
+                  </p>
 
 
+                  {/* =================================
+                      FILE INPUT
+                  ================================== */}
 
-              <h2>
-                Upload Race Radio
-              </h2>
+                  <input
 
+                    type="file"
 
+                    id="audio-upload"
 
+                    hidden
 
-              <div className="upload-placeholder">
+                    accept="
+                      .mp3,
+                      .wav,
+                      .m4a,
+                      .aac,
+                      .flac,
+                      .ogg,
+                      .oga,
+                      .webm,
+                      .wma,
+                      .opus,
+                      .mp4,
+                      audio/*
+                    "
 
-
-
-                <div className="upload-icon">
-                  🎧
-                </div>
-
-
-
-                <h3>
-                  Drag & Drop Audio
-                </h3>
-
-
-
-                <p>
-                  Upload Formula 1 race radio
-                  <br />
-                  in any audio format
-                </p>
-
-
-
-
-
-                <input
-
-                  type="file"
-
-                  id="audio-upload"
-
-                  hidden
-
-                 accept="audio/*"
-
-                  onChange={(e)=>{
-
-
-                    const selectedFile =
-                    e.target.files[0];
-
-
-
-                    if(selectedFile){
-
-
-
-                      if(selectedFile.type.startsWith("audio/"))
-{
-
-    setFile(selectedFile);
-    setError("");
-
-}
-
-else
-{
-
-    setFile(null);
-
-    setError(
-        "Only audio files are allowed."
-    );
-
-}
-
-
+                    onChange={
+                      handleFileChange
                     }
 
+                  />
 
 
-                  }}
+                  {/* =================================
+                      BROWSE BUTTON
+                  ================================== */}
 
-                />
+                  <label
 
+                    htmlFor="audio-upload"
 
+                    className="browse-btn"
 
+                  >
 
+                    Browse Files
 
-                <label
-
-                  htmlFor="audio-upload"
-
-                  className="browse-btn"
-
-                >
-
-                  Browse Files
-
-                </label>
+                  </label>
 
 
+                  {/* =================================
+                      SELECTED FILE
+                  ================================== */}
+
+                  {file && (
+
+                    <div className="file-name">
+
+                      <strong>
+                        Selected:
+                      </strong>
+
+                      <br />
+
+                      {file.name}
+
+                    </div>
+
+                  )}
 
 
+                  {/* =================================
+                      FORMAT INFORMATION
+                  ================================== */}
 
-                {
-                  file && (
+                  <div className="supported-formats">
 
-                    <p className="file-name">
+                    <span>
+                      MP3
+                    </span>
 
-                      Selected: {file.name}
+                    <span>
+                      WAV
+                    </span>
 
-                    </p>
+                    <span>
+                      M4A
+                    </span>
 
-                  )
-                }
+                    <span>
+                      AAC
+                    </span>
 
+                    <span>
+                      FLAC
+                    </span>
 
+                    <span>
+                      OGG
+                    </span>
 
+                    <span>
+                      WEBM
+                    </span>
 
+                    <span>
+                      OPUS
+                    </span>
 
-                <div className="supported-formats">
-
-
-                  <span>
-                   All Audio Formats
-                  </span>
+                  </div>
 
 
                 </div>
-
-
-
 
               </div>
 
 
+              {/* ===================================
+                  RIGHT CARD
+              ==================================== */}
 
+              <div className="details-card">
+
+
+                <div className="details-header">
+
+                  <h2>
+                    Session Details
+                  </h2>
+
+                </div>
+
+
+                {/* =================================
+                    DRIVER
+                ================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    Driver Name
+                  </label>
+
+
+                  <input
+
+                    type="text"
+
+                    placeholder="e.g. Max Verstappen"
+
+                    value={driver}
+
+                    onChange={(e) =>
+                      setDriver(
+                        e.target.value
+                      )
+                    }
+
+                  />
+
+                </div>
+
+
+                {/* =================================
+                    TEAM
+                ================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    Team
+                  </label>
+
+
+                  <select
+
+                    value={team}
+
+                    onChange={(e) =>
+                      setTeam(
+                        e.target.value
+                      )
+                    }
+
+                  >
+
+                    <option value="">
+                      Select Team
+                    </option>
+
+
+                    <option value="Red Bull Racing">
+                      Red Bull Racing
+                    </option>
+
+
+                    <option value="Ferrari">
+                      Ferrari
+                    </option>
+
+
+                    <option value="Mercedes">
+                      Mercedes
+                    </option>
+
+
+                    <option value="McLaren">
+                      McLaren
+                    </option>
+
+
+                    <option value="Aston Martin">
+                      Aston Martin
+                    </option>
+
+
+                    <option value="Williams">
+                      Williams
+                    </option>
+
+
+                    <option value="Alpine">
+                      Alpine
+                    </option>
+
+
+                    <option value="RB">
+                      RB
+                    </option>
+
+
+                    <option value="Haas">
+                      Haas
+                    </option>
+
+
+                    <option value="Sauber">
+                      Sauber
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                {/* =================================
+                    TRACK
+                ================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    Track
+                  </label>
+
+
+                  <input
+
+                    type="text"
+
+                    placeholder="e.g. Monaco"
+
+                    value={track}
+
+                    onChange={(e) =>
+                      setTrack(
+                        e.target.value
+                      )
+                    }
+
+                  />
+
+                </div>
+
+
+                {/* =================================
+                    LAP NUMBER
+                ================================== */}
+
+                <div className="form-group">
+
+                  <label>
+                    Lap Number
+                  </label>
+
+
+                  <input
+
+                    type="number"
+
+                    placeholder="e.g. 32"
+
+                    min="1"
+
+                    value={lap}
+
+                    onChange={(e) =>
+                      setLap(
+                        e.target.value
+                      )
+                    }
+
+                  />
+
+                </div>
+
+
+              </div>
 
             </div>
-                      {/* RIGHT CARD */}
 
 
+            {/* =====================================
+                START ANALYSIS
+            ====================================== */}
 
-          <div className="details-card">
+            <div className="analysis-section">
 
 
+              {error && (
 
-            <div className="details-header">
+                <p className="upload-error">
+                  {error}
+                </p>
 
-
-              <h2>
-                Session Details
-              </h2>
-
+              )}
 
 
               <button
 
-                className="archive-trigger"
+                type="button"
 
-                onClick={() => setArchiveOpen(true)}
+                className="analysis-btn"
+
+                onClick={startAnalysis}
 
               >
 
-                📂 Archive
+                🏁 START ANALYSIS
 
               </button>
 
 
-
             </div>
 
 
-
-
-
-            <div className="form-group">
-
-
-              <label>
-                Driver Name
-              </label>
-
-
-
-              <input
-
-                type="text"
-
-                placeholder="e.g. Max Verstappen"
-
-                value={driver}
-
-                onChange={(e)=>setDriver(e.target.value)}
-
-              />
-
-
-            </div>
-
-
-
-
-
-
-
-            <div className="form-group">
-
-
-              <label>
-                Team
-              </label>
-
-
-
-
-              <select
-
-                value={team}
-
-                onChange={(e)=>setTeam(e.target.value)}
-
-              >
-
-
-
-                <option value="">
-                  Select Team
-                </option>
-
-
-
-                <option>
-                  Red Bull Racing
-                </option>
-
-
-
-                <option>
-                  Ferrari
-                </option>
-
-
-
-                <option>
-                  Mercedes
-                </option>
-
-
-
-                <option>
-                  McLaren
-                </option>
-
-
-
-                <option>
-                  Aston Martin
-                </option>
-
-
-
-                <option>
-                  Williams
-                </option>
-
-
-
-                <option>
-                  Alpine
-                </option>
-
-
-
-                <option>
-                  RB
-                </option>
-
-
-
-                <option>
-                  Haas
-                </option>
-
-
-
-                <option>
-                  Sauber
-                </option>
-
-
-
-              </select>
-
-
-            </div>
-
-
-
-
-
-
-
-            <div className="form-group">
-
-
-              <label>
-                Track
-              </label>
-
-
-
-              <input
-
-                type="text"
-
-                placeholder="e.g. Monaco"
-
-                value={track}
-
-                onChange={(e)=>setTrack(e.target.value)}
-
-              />
-
-
-            </div>
-
-
-
-
-
-
-
-            <div className="form-group">
-
-
-              <label>
-                Lap Number
-              </label>
-
-
-
-              <input
-
-                type="number"
-
-                placeholder="e.g. 32"
-
-                value={lap}
-
-                onChange={(e)=>setLap(e.target.value)}
-
-              />
-
-
-            </div>
-
-
-
-
-          </div>
-
-
-
+          </main>
 
         </div>
 
+      </>
 
-
-
-
-
-
-        {/* START ANALYSIS */}
-
-
-
-
-        <div className="analysis-section">
-
-
-
-          {
-            error && (
-
-              <p className="upload-error">
-
-                {error}
-
-              </p>
-
-            )
-          }
-
-
-
-
-
-          <button
-
-            className="analysis-btn"
-
-            onClick={startAnalysis}
-
-          >
-
-            🏁 START ANALYSIS
-
-          </button>
-
-
-
-
-        </div>
-                {/* ================= ARCHIVE DRAWER ================= */}
-
-
-
-        <div
-
-          className={`archive-drawer ${archiveOpen ? "open" : ""}`}
-
-        >
-
-
-
-          <div className="archive-top">
-
-
-            <h2>
-              📂 Race Radio Archive
-            </h2>
-
-
-
-            <button
-
-              className="close-drawer"
-
-              onClick={() => setArchiveOpen(false)}
-
-            >
-
-              ✕
-
-            </button>
-
-
-
-          </div>
-
-
-
-
-
-          <div className="archive-item">
-
-
-            <h3>
-              🏁 Bahrain GP
-            </h3>
-
-
-
-            <p>
-              Max Verstappen
-            </p>
-
-
-
-            <span>
-              radio_001.mp3
-            </span>
-
-
-
-          </div>
-
-
-
-
-
-
-          <div className="archive-item">
-
-
-            <h3>
-              🏁 Monaco GP
-            </h3>
-
-
-
-            <p>
-              Charles Leclerc
-            </p>
-
-
-
-            <span>
-              radio_002.mp3
-            </span>
-
-
-
-          </div>
-
-
-
-
-
-
-
-          <div className="archive-item">
-
-
-            <h3>
-              🏁 Silverstone GP
-            </h3>
-
-
-
-            <p>
-              Lewis Hamilton
-            </p>
-
-
-
-            <span>
-              radio_003.mp3
-            </span>
-
-
-
-          </div>
-
-
-
-
-        </div>
-
-
-
-
-
-               </main>
-
-      </div>
-
-    </>
-
-  </PageTransition>
-
+    </PageTransition>
 
   );
 
 }
+
+
 export default Upload;
