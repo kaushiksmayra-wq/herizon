@@ -263,9 +263,9 @@ function Upload() {
 );
 
 
-      const data =
-        await response.json();
-
+      const text = await response.text();
+console.log("BACKEND STATUS:", response.status);
+console.log("BACKEND RESPONSE:", text);
 
       console.log(
         "==================================="

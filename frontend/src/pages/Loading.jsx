@@ -88,7 +88,7 @@ function Loading() {
 
 
        const response = await fetch(
-  `https://herizon-yn7o.vercel.app/api/analyze/${session_id}`,
+  `https://herizon-yn7o.vercel.app/api/analyze/${session_id}/`,
   {
     method: "POST"
   }
