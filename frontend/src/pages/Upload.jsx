@@ -255,12 +255,12 @@ function Upload() {
       // ======================================
 
       const response = await fetch(
-        "http://127.0.0.1:8001/api/upload/",
-        {
-          method: "POST",
-          body: formData
-        }
-      );
+  "https://herizon-yn7o.vercel.app/api/upload/",
+  {
+    method: "POST",
+    body: formData
+  }
+);
 
 
       const data =
