@@ -280,7 +280,7 @@ console.log("BACKEND RESPONSE:", text);
       );
 
 
-      console.log(data);
+    
 
 
       // ======================================
