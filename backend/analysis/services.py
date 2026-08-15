@@ -54,29 +54,6 @@ EMOTION_MODEL = "superb/wav2vec2-base-superb-er"
 # LOAD EMOTION MODEL
 # ============================================================
 
-print("===================================")
-print("LOADING HUGGING FACE EMOTION MODEL")
-print("===================================")
-
-try:
-
-    emotion_classifier = pipeline(
-        "audio-classification",
-        model=EMOTION_MODEL,
-        top_k=4
-    )
-
-    print("Emotion model loaded successfully.")
-
-except Exception as error:
-
-    print("===================================")
-    print("EMOTION MODEL LOAD ERROR")
-    print("===================================")
-
-    print(error)
-
-    emotion_classifier = None
 
 
 # ============================================================
@@ -441,20 +418,12 @@ def process_race_audio(session):
     print("Model:", EMOTION_MODEL)
 
 
-    if emotion_classifier is None:
+    try:
 
-        print(
-            "Emotion classifier is not available."
+        emotion_results = hf_client.audio_classification(
+            audio=audio_path,
+            model=EMOTION_MODEL
         )
-
-
-    else:
-
-        try:
-
-            emotion_results = emotion_classifier(
-                audio_path
-            )
 
 
             print("===================================")
