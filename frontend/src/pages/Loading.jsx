@@ -87,12 +87,12 @@ function Loading() {
         );
 
 
-        const response = await fetch(
-          `http://127.0.0.1:8001/api/analyze/${session_id}/`,
-          {
-            method: "POST"
-          }
-        );
+       const response = await fetch(
+  `https://herizon-yn7o.vercel.app/api/analyze/${session_id}`,
+  {
+    method: "POST"
+  }
+);
 
 
         const data = await response.json();
