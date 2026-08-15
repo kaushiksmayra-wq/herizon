@@ -36,8 +36,11 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    "herizon-yn7o.vercel.app",
+    "localhost",
+    "127.0.0.1",
+]
 
 # Application definition
 
